@@ -3,7 +3,6 @@ import { Engine } from "@thirdweb-dev/engine";
 import { NextApiRequest, NextApiResponse } from "next";
 // import { NFT_CONTRACT_ADDRESS } from "../../constants/constants";
 import { getUser } from "./auth/[...thirdweb]";
-import startPolling, { timeout } from "./startPolling";
 
 export default async function handler(
   req: NextApiRequest,
@@ -66,14 +65,14 @@ export default async function handler(
       new Promise((resolve) => setTimeout(resolve, duration));
 
     let response;
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 7; i++) {
       response = await engine.transaction.status(queueId);
       console.log("+++ Received status:", response?.result?.status);
       if (["mined", "failed"].includes(response?.result?.status ?? "")) {
         console.log("+++ Status found. Break!");
         break;
       }
-      await sleep(1000);
+      await sleep(500);
     }
 
     if (response?.result?.status === "failed") {
