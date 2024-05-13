@@ -17,14 +17,12 @@ import {
 import { NextPage } from "next";
 import Head from "next/head";
 import ImageSlider from "../components/ImageSlider";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { parseIneligibility } from "../utils/parseIneligibility";
 import { BigNumber, utils } from "ethers";
 import styles from "../styles/Theme.module.css";
 import confetti from "canvas-confetti";
-import { images, openerImage } from "./images";
-
+import { images, openerImage } from "../constants/galleryImages";
 const Home: NextPage = () => {
   const address = useAddress();
   const user = useUser();
