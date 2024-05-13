@@ -28,7 +28,6 @@ import { images, openerImage } from "./images";
 const Home: NextPage = () => {
   const address = useAddress();
   const user = useUser();
-  console.log("+++ user:", user);
 
   const [quantity, setQuantity] = useState(1);
   const { contract: editionDrop } = useContract(
@@ -203,8 +202,6 @@ const Home: NextPage = () => {
     nft?.metadata.id
   );
 
-  console.log("+++ balance:", balance?.toNumber());
-
   const buttonLoading = useMemo(
     () => isLoading || claimIneligibilityReasons.isLoading,
     [claimIneligibilityReasons.isLoading, isLoading]
@@ -215,7 +212,7 @@ const Home: NextPage = () => {
     }
 
     if (balance?.toNumber() ?? 0 > 0) {
-      return "You already minted ✅";
+      return "NFT minted ✅";
     }
 
     if (!user?.isLoggedIn) {

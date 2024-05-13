@@ -12,9 +12,9 @@
     "deploy": "next build && next export && npx thirdweb@latest upload out"
   },
   "dependencies": {
-    "@thirdweb-dev/engine": "0.0.1",
-    "@thirdweb-dev/react": "^4.6.5",
-    "@thirdweb-dev/sdk": "^4.0.75",
+    "@thirdweb-dev/engine": "^0.0.6",
+    "@thirdweb-dev/react": "^4.6.20",
+    "@thirdweb-dev/sdk": "^4.0.81",
     "canvas-confetti": "^1.9.0",
     "ethers": "^5",
     "next": "^13",
