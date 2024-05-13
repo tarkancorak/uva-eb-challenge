@@ -293,6 +293,8 @@ const Home: NextPage = () => {
             <div className={`${styles.infoSide} order-3 md:order-1`}>
               <ImageSlider
                 items={balance?.toNumber() ?? 0 > 0 ? images : openerImage}
+                showPlayButton={balance?.toNumber() ?? 0 > 0 ? true : false}
+                showFullscreenButton={balance?.toNumber() ?? 0 > 0 ? true : false}
               />
             </div>
             <div className='h-full w-full md:w-1/4 mb-2 md:mb-0 order-1 md:order-2'>
