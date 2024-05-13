@@ -1,0 +1,5 @@
+export const NFT_CONTRACT_ADDRESS = "0xF9C65868514bcd4Dd238A01435c63239Eb206204";
+export const GIFT_URI =
+  "ipfs://QmTiKFn2C1PJun9ciXq5XgSSGcm8JrWsVBtLfqPjgLUi7Y/00-cover.png";
+export const ACCOUNT_FACTORY_ADDRESS =
+  "0x056304a360c4e4e19031a4bb3ea8ccfb0146f674";
