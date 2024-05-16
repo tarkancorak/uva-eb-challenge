@@ -207,7 +207,6 @@ const Home: NextPage = () => {
     [claimIneligibilityReasons.isLoading, isLoading]
   );
 
-  const [queueId, setQueueId] = useState(null);
   const [isMinted, setIsMinted] = useState(false);
   const [isFailed, setIsFailed] = useState(false);
 
@@ -221,11 +220,7 @@ const Home: NextPage = () => {
     }
 
     if (!user?.isLoggedIn) {
-      return "Sign in to mint your NFT!";
-    }
-
-    if (!!queueId) {
-      return "Minting queued. Please wait a moment...";
+      return "Please sign in to mint your NFT!";
     }
 
     if (canClaim) {
@@ -250,7 +245,6 @@ const Home: NextPage = () => {
     balance,
     isMinted,
     user?.isLoggedIn,
-    queueId,
     canClaim,
     claimIneligibilityReasons.data,
     buttonLoading,
@@ -259,37 +253,29 @@ const Home: NextPage = () => {
     quantity,
   ]);
 
-  useEffect(() => {
-    const getMintedStatus = async () => {
-      const sleep = (duration: number) =>
-        new Promise((resolve) => setTimeout(resolve, duration));
+  const getMintedStatus = async (queueId: string) => {
+    const sleep = (duration: number) =>
+      new Promise((resolve) => setTimeout(resolve, duration));
 
-      let response;
-      for (let i = 0; i < 20; i++) {
-        response = await fetch(`/api/status/?queueId=${queueId}`);
-        const json = await response.json();
-        console.log("+++ Received status:", json?.status);
-        if (json.status === "mined") {
-          setIsMinted(true);
-          setQueueId(null);
-          setIsFailed(false);
-          confetti();
-          break;
-        } else if (json?.status === "failed") {
-          setIsMinted(false);
-          setQueueId(null);
-          setIsFailed(true);
-          break;
-        }
-
-        await sleep(500);
+    let response;
+    for (let i = 0; i < 30; i++) {
+      response = await fetch(`/api/status/?queueId=${queueId}`);
+      const json = await response.json();
+      console.log("+++ Received status:", json?.status);
+      if (json.status === "mined") {
+        setIsMinted(true);
+        setIsFailed(false);
+        confetti();
+        break;
+      } else if (json?.status === "failed") {
+        setIsMinted(false);
+        setIsFailed(true);
+        break;
       }
-    };
-    if (queueId) {
-      console.log("+++ polling minting status for queueId:", queueId);
-      getMintedStatus();
+
+      await sleep(500);
     }
-  }, [queueId]);
+  };
 
   const claim = async () => {
     try {
@@ -302,12 +288,13 @@ const Home: NextPage = () => {
       if (!response.ok || response.status !== 200) {
         throw new Error(json);
       }
-      // confetti();
-      console.log("+++ setQueueId:", json.queueId);
-      setQueueId(json.queueId);
-      return Promise.resolve(json);
+      const queueId = json?.queueId;
+      if (!queueId) {
+        throw new Error("Missing queueId");
+      }
+      return getMintedStatus(queueId);
     } catch (error) {
-      alert("Failed. Please try again!");
+      setIsFailed(true);
     }
   };
 
@@ -434,7 +421,6 @@ const Home: NextPage = () => {
                             !canClaim ||
                             buttonLoading ||
                             !user?.isLoggedIn ||
-                            !!queueId ||
                             (balance?.toNumber() ?? 0) > 0
                           }
                         >
