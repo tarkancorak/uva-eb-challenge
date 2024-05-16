@@ -17,7 +17,7 @@ import {
 import { NextPage } from "next";
 import Head from "next/head";
 import ImageSlider from "../components/ImageSlider";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseIneligibility } from "../utils/parseIneligibility";
 import { BigNumber, utils } from "ethers";
 import styles from "../styles/Theme.module.css";
@@ -194,27 +194,38 @@ const Home: NextPage = () => {
 
   const nft = nfts?.[0];
 
-  const { data: balance, isLoading: isLoadingOwned } = useNFTBalance(
+  const { data: balance } = useNFTBalance(
     editionDrop,
     address,
     nft?.metadata.id
   );
 
+  console.log("+++ balance:", balance?.toNumber());
+
   const buttonLoading = useMemo(
     () => isLoading || claimIneligibilityReasons.isLoading,
     [claimIneligibilityReasons.isLoading, isLoading]
   );
+
+  const [queueId, setQueueId] = useState(null);
+  const [isMinted, setIsMinted] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+
   const buttonText = useMemo(() => {
     if (isSoldOut) {
       return "Sold Out";
     }
 
-    if (balance?.toNumber() ?? 0 > 0) {
+    if ((balance?.toNumber() ?? 0 > 0) || isMinted) {
       return "NFT minted ✅";
     }
 
     if (!user?.isLoggedIn) {
       return "Sign in to mint your NFT!";
+    }
+
+    if (!!queueId) {
+      return "Minting queued. Please wait a moment...";
     }
 
     if (canClaim) {
@@ -237,7 +248,9 @@ const Home: NextPage = () => {
   }, [
     isSoldOut,
     balance,
+    isMinted,
     user?.isLoggedIn,
+    queueId,
     canClaim,
     claimIneligibilityReasons.data,
     buttonLoading,
@@ -246,18 +259,52 @@ const Home: NextPage = () => {
     quantity,
   ]);
 
+  useEffect(() => {
+    const getMintedStatus = async () => {
+      const sleep = (duration: number) =>
+        new Promise((resolve) => setTimeout(resolve, duration));
+
+      let response;
+      for (let i = 0; i < 20; i++) {
+        response = await fetch(`/api/status/?queueId=${queueId}`);
+        const json = await response.json();
+        console.log("+++ Received status:", json?.status);
+        if (json.status === "mined") {
+          setIsMinted(true);
+          setQueueId(null);
+          setIsFailed(false);
+          confetti();
+          break;
+        } else if (json?.status === "failed") {
+          setIsMinted(false);
+          setQueueId(null);
+          setIsFailed(true);
+          break;
+        }
+
+        await sleep(500);
+      }
+    };
+    if (queueId) {
+      console.log("+++ polling minting status for queueId:", queueId);
+      getMintedStatus();
+    }
+  }, [queueId]);
+
   const claim = async () => {
     try {
-      const result = await fetch("/api/claim", {
+      const response = await fetch("/api/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tokenId: contractMetadata?.id }),
       });
-      const json = await result.json();
-      if (!result.ok || result.status !== 200) {
+      const json = await response.json();
+      if (!response.ok || response.status !== 200) {
         throw new Error(json);
       }
-      confetti();
+      // confetti();
+      console.log("+++ setQueueId:", json.queueId);
+      setQueueId(json.queueId);
       return Promise.resolve(json);
     } catch (error) {
       alert("Failed. Please try again!");
@@ -294,7 +341,9 @@ const Home: NextPage = () => {
               <ImageSlider
                 items={balance?.toNumber() ?? 0 > 0 ? images : openerImage}
                 showPlayButton={balance?.toNumber() ?? 0 > 0 ? true : false}
-                showFullscreenButton={balance?.toNumber() ?? 0 > 0 ? true : false}
+                showFullscreenButton={
+                  balance?.toNumber() ?? 0 > 0 ? true : false
+                }
               />
             </div>
             <div className='h-full w-full md:w-1/4 mb-2 md:mb-0 order-1 md:order-2'>
@@ -376,29 +425,32 @@ const Home: NextPage = () => {
                         <h2>Sold Out</h2>
                       </div>
                     ) : (
-                      <Web3Button
-                        contractAddress={editionDrop?.getAddress() || ""}
-                        // action={(cntr) => cntr.erc1155.claim(tokenId, quantity)}
-                        action={claim}
-                        isDisabled={
-                          !canClaim ||
-                          buttonLoading ||
-                          !user?.isLoggedIn ||
-                          balance?.toNumber() > 0
-                        }
-                        onError={(err) => {
-                          console.error(err);
-                          alert("Error claiming NFTs");
-                        }}
-                        onSuccess={() => {
-                          setTimeout(() => {
-                            setQuantity(1);
-                            confetti();
-                          }, 2);
-                        }}
-                      >
-                        {buttonLoading ? "Loading..." : buttonText}
-                      </Web3Button>
+                      <div className='flex flex-col gap-4'>
+                        <Web3Button
+                          contractAddress={editionDrop?.getAddress() || ""}
+                          // action={(cntr) => cntr.erc1155.claim(tokenId, quantity)}
+                          action={claim}
+                          isDisabled={
+                            !canClaim ||
+                            buttonLoading ||
+                            !user?.isLoggedIn ||
+                            !!queueId ||
+                            (balance?.toNumber() ?? 0) > 0
+                          }
+                        >
+                          {buttonLoading ? "Loading..." : buttonText}
+                        </Web3Button>
+                        {isFailed && (
+                          <div
+                            className='p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400'
+                            role='alert'
+                          >
+                            <span className='font-medium'>
+                              Minting failed. Please try again.
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </>

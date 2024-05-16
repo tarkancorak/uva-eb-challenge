@@ -41,7 +41,7 @@ export default async function handler(
       queueId?.toString() ?? ""
     );
 
-    console.log("+++ result:", JSON.stringify(response.result, null, 2));
+    // console.log("+++ result:", JSON.stringify(response.result, null, 2));
     return res.status(200).send({ status: response.result?.status });
   } catch (error) {
     console.error("+++ error:", error);

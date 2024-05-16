@@ -46,7 +46,7 @@ export default async function handler(
     //   backendWallet,
     // });
 
-    const result: any = await engine.erc1155.claimTo(
+    const response: any = await engine.erc1155.claimTo(
       // Sepolia.chainId.toString(),
       chainId,
       contractAddress,
@@ -58,29 +58,30 @@ export default async function handler(
       }
     );
 
-    const queueId = result?.result?.queueId;
+    const queueId = response?.result?.queueId;
     console.log("Got queueId: ", queueId);
+    return res.status(200).send({ message: "claimed", queueId });
 
-    const sleep = (duration: number) =>
-      new Promise((resolve) => setTimeout(resolve, duration));
+    // const sleep = (duration: number) =>
+    //   new Promise((resolve) => setTimeout(resolve, duration));
 
-    let response;
-    for (let i = 0; i < 7; i++) {
-      response = await engine.transaction.status(queueId);
-      console.log("+++ Received status:", response?.result?.status);
-      if (["mined", "failed"].includes(response?.result?.status ?? "")) {
-        console.log("+++ Status found. Break!");
-        break;
-      }
-      await sleep(500);
-    }
+    // let response;
+    // for (let i = 0; i < 7; i++) {
+    //   response = await engine.transaction.status(queueId);
+    //   console.log("+++ Received status:", response?.result?.status);
+    //   if (["mined", "failed"].includes(response?.result?.status ?? "")) {
+    //     console.log("+++ Status found. Break!");
+    //     break;
+    //   }
+    //   await sleep(500);
+    // }
 
-    if (response?.result?.status === "failed") {
-      console.log("+++ Claim failed.", response);
-      return res.status(500).send({ message: "Claim failed" });
-    } else {
-      return res.status(200).send({ message: "claimed", queueId });
-    }
+    // if (response?.result?.status === "failed") {
+    //   console.log("+++ Claim failed.", response);
+    //   return res.status(500).send({ message: "Claim failed" });
+    // } else {
+    //   return res.status(200).send({ message: "claimed", queueId });
+    // }
   } catch (error) {
     console.error("+++ error while claiming:", error);
     return res.status(500).send({ message: JSON.stringify(error) });
