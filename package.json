@@ -15,7 +15,7 @@
     "@thirdweb-dev/engine": "^0.0.6",
     "@thirdweb-dev/react": "^4.6.20",
     "@thirdweb-dev/sdk": "^4.0.81",
-    "canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.3",
     "ethers": "^5",
     "next": "^13",
     "node-cache": "^5.1.2",
