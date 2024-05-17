@@ -17,12 +17,13 @@ import {
 import { NextPage } from "next";
 import Head from "next/head";
 import ImageSlider from "../components/ImageSlider";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseIneligibility } from "../utils/parseIneligibility";
 import { BigNumber, utils } from "ethers";
 import styles from "../styles/Theme.module.css";
 import confetti from "canvas-confetti";
 import { images, openerImage } from "../constants/galleryImages";
+import toast from "react-hot-toast";
 const Home: NextPage = () => {
   const address = useAddress();
   const user = useUser();
@@ -200,8 +201,6 @@ const Home: NextPage = () => {
     nft?.metadata.id
   );
 
-  console.log("+++ balance:", balance?.toNumber());
-
   const buttonLoading = useMemo(
     () => isLoading || claimIneligibilityReasons.isLoading,
     [claimIneligibilityReasons.isLoading, isLoading]
@@ -209,6 +208,7 @@ const Home: NextPage = () => {
 
   const [isMinted, setIsMinted] = useState(false);
   const [isFailed, setIsFailed] = useState(false);
+  const mintingStatus = useRef(null);
 
   const buttonText = useMemo(() => {
     if (isSoldOut) {
@@ -258,22 +258,28 @@ const Home: NextPage = () => {
       new Promise((resolve) => setTimeout(resolve, duration));
 
     let response;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 50; i++) {
       response = await fetch(`/api/status/?queueId=${queueId}`);
       const json = await response.json();
-      console.log("+++ Received status:", json?.status);
+      if (mintingStatus.current !== json?.status) {
+        mintingStatus.current = json.status;
+        console.log("+++ Received status:", mintingStatus.current);
+        toast(`Minting Status: ${mintingStatus.current}`);
+      }
       if (json.status === "mined") {
         setIsMinted(true);
         setIsFailed(false);
+        mintingStatus.current = null;
         confetti();
         break;
       } else if (json?.status === "failed") {
         setIsMinted(false);
         setIsFailed(true);
+        mintingStatus.current = null;
         break;
       }
 
-      await sleep(500);
+      await sleep(1000);
     }
   };
 
