@@ -9,33 +9,35 @@ import {
   useClaimerProofs,
   useContract,
   useContractMetadata,
+  useNFT,
   useNFTBalance,
-  useNFTs,
   useTotalCirculatingSupply,
   useUser,
 } from "@thirdweb-dev/react";
 import { NextPage } from "next";
 import Head from "next/head";
 import ImageSlider from "../components/ImageSlider";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { parseIneligibility } from "../utils/parseIneligibility";
 import { BigNumber, utils } from "ethers";
 import styles from "../styles/Theme.module.css";
 import confetti from "canvas-confetti";
 import { images, openerImage } from "../constants/galleryImages";
 import toast from "react-hot-toast";
+
 const Home: NextPage = () => {
   const address = useAddress();
   const user = useUser();
 
-  const [quantity, setQuantity] = useState(1);
+  const [quantity] = useState(1);
   const { contract: editionDrop } = useContract(
     process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS!
   );
   const { data: contractMetadata } = useContractMetadata(editionDrop);
-  const { data: nfts, isLoading: isLoadingNfts } = useNFTs(editionDrop);
 
   const tokenId = Number(process.env.NEXT_PUBLIC_TOKEN_ID) || 0;
+
+  const { data: nft, isLoading: isLoadingNft } = useNFT(editionDrop, tokenId);
 
   const claimConditions = useClaimConditions(editionDrop);
   const activeClaimCondition = useActiveClaimConditionForWallet(
@@ -179,31 +181,10 @@ const Home: NextPage = () => {
     isSoldOut,
   ]);
 
-  const isLoading = useMemo(() => {
-    return (
-      isLoadingNfts ||
-      activeClaimCondition.isLoading ||
-      claimedSupply.isLoading ||
-      !editionDrop
-    );
-  }, [
-    isLoadingNfts,
-    activeClaimCondition.isLoading,
-    editionDrop,
-    claimedSupply.isLoading,
-  ]);
-
-  const nft = nfts?.[0];
-
   const { data: balance } = useNFTBalance(
     editionDrop,
     address,
     nft?.metadata.id
-  );
-
-  const buttonLoading = useMemo(
-    () => isLoading || claimIneligibilityReasons.isLoading,
-    [claimIneligibilityReasons.isLoading, isLoading]
   );
 
   const [isMinted, setIsMinted] = useState(false);
@@ -219,10 +200,6 @@ const Home: NextPage = () => {
       return "NFT minted ✅";
     }
 
-    if (!user?.isLoggedIn) {
-      return "Please sign in to mint your NFT!";
-    }
-
     if (canClaim) {
       const pricePerToken = BigNumber.from(
         activeClaimCondition.data?.currencyMetadata.value || 0
@@ -235,7 +212,7 @@ const Home: NextPage = () => {
     if (claimIneligibilityReasons.data?.length) {
       return parseIneligibility(claimIneligibilityReasons.data, quantity);
     }
-    if (buttonLoading) {
+    if (claimIneligibilityReasons.isLoading) {
       return "Checking eligibility...";
     }
 
@@ -244,10 +221,9 @@ const Home: NextPage = () => {
     isSoldOut,
     balance,
     isMinted,
-    user?.isLoggedIn,
     canClaim,
     claimIneligibilityReasons.data,
-    buttonLoading,
+    claimIneligibilityReasons.isLoading,
     activeClaimCondition.data?.currencyMetadata.value,
     priceToMint,
     quantity,
@@ -304,92 +280,71 @@ const Home: NextPage = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <main>
-        <Head>
-          <title>Your Digital Keepsake - UvA EB Challenge</title>
-        </Head>
-        <div className={styles.mintInfoContainer}>
-          <p>Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main>
       <Head>
         <title>Your Digital Keepsake - UvA EB Challenge</title>
       </Head>
-      {/* <button onClick={() => getStatus("ff5566d1-24e9-4d98-8952-daf5f428ccef")}>
-        get status
-      </button> */}
       <div className={styles.mintInfoContainer}>
-        {isLoading ? (
-          <p>Loading...</p>
-        ) : (
-          <>
-            <div className={`${styles.infoSide} order-3 md:order-1`}>
-              <ImageSlider
-                items={balance?.toNumber() ?? 0 > 0 ? images : openerImage}
-                showPlayButton={balance?.toNumber() ?? 0 > 0 ? true : false}
-                showFullscreenButton={
-                  balance?.toNumber() ?? 0 > 0 ? true : false
-                }
-              />
-            </div>
-            <div className='h-full w-full md:w-1/4 mb-2 md:mb-0 order-1 md:order-2'>
-              {/* Title of your NFT Collection */}
-              <h1 className='ml-[5%] md:ml-0'>{contractMetadata?.name}</h1>
-              {/* Description of your NFT Collection */}
-              <p className={`${styles.description} ml-[5%] md:ml-0`}>
-                Your Digital Keepsake
-              </p>
-            </div>
+        <>
+          <div className={`${styles.infoSide} order-3 md:order-1`}>
+            <ImageSlider
+              items={balance?.toNumber() ?? 0 > 0 ? images : openerImage}
+              showPlayButton={balance?.toNumber() ?? 0 > 0 ? true : false}
+              showFullscreenButton={balance?.toNumber() ?? 0 > 0 ? true : false}
+            />
+          </div>
+          <div className='h-full w-full md:w-1/4 mb-2 md:mb-0 order-1 md:order-2'>
+            {/* Title of your NFT Collection */}
+            <h1 className='ml-[5%] md:ml-0'>{contractMetadata?.name}</h1>
+            {/* Description of your NFT Collection */}
+            <p className={`${styles.description} ml-[5%] md:ml-0`}>
+              Your Digital Keepsake
+            </p>
+          </div>
 
-            <div className={`${styles.imageSide} order-2 md:order-3`}>
-              {/* Image Preview of NFTs */}
-              <img
-                className={styles.image}
-                src={contractMetadata?.image!}
-                alt={`${contractMetadata?.name} preview image`}
-                width='666px'
-                height='666px'
-              />
+          <div className={`${styles.imageSide} order-2 md:order-3`}>
+            {/* Image Preview of NFTs */}
+            <img
+              className={styles.image}
+              src={contractMetadata?.image ?? "/images/gallery/03-666x666.jpg"}
+              alt={`${contractMetadata?.name} preview image`}
+              width='666px'
+              height='666px'
+            />
 
-              {/* Amount claimed so far */}
-              <div className={`${styles.mintCompletionArea} mt-2`}>
-                <div className={styles.mintAreaLeft}>
-                  <p>Total Minted</p>
-                </div>
-                <div className={styles.mintAreaRight}>
-                  {claimedSupply ? (
-                    <p>
-                      <b>{numberClaimed}</b>
-                      {" / "}
-                      {numberTotal || "∞"}
-                    </p>
-                  ) : (
-                    // Show loading state if we're still loading the supply
-                    <p>Loading...</p>
-                  )}
-                </div>
+            {/* Amount claimed so far */}
+            <div className={`${styles.mintCompletionArea} mt-2`}>
+              <div className={styles.mintAreaLeft}>
+                <p>Total Minted</p>
               </div>
+              <div className={styles.mintAreaRight}>
+                {claimedSupply ? (
+                  <p>
+                    <b>{numberClaimed}</b>
+                    {" / "}
+                    {numberTotal || "∞"}
+                  </p>
+                ) : (
+                  // Show loading state if we're still loading the supply
+                  <p>Loading...</p>
+                )}
+              </div>
+            </div>
 
-              {claimConditions.data?.length === 0 ||
-              claimConditions.data?.every(
-                (cc) => cc.maxClaimableSupply === "0"
-              ) ? (
-                <div>
-                  <h2>
-                    This drop is not ready to be minted yet. (No claim condition
-                    set)
-                  </h2>
-                </div>
-              ) : (
-                <>
-                  {/* <p>Quantity</p>
+            {claimConditions.data?.length === 0 ||
+            claimConditions.data?.every(
+              (cc) => cc.maxClaimableSupply === "0"
+            ) ? (
+              <div>
+                <h2>
+                  This drop is not ready to be minted yet. (No claim condition
+                  set)
+                </h2>
+              </div>
+            ) : (
+              <>
+                {/* <p>Quantity</p>
                   <div className={styles.quantityContainer}>
                     <button
                       className={`${styles.quantityControlButton}`}
@@ -410,46 +365,45 @@ const Home: NextPage = () => {
                     </button>
                   </div> */}
 
-                  <div
-                    className={`flex flex-row align-center justify-center gap-4 mt-6 mb-6 md:mb-0`}
-                  >
-                    {isSoldOut ? (
-                      <div>
-                        <h2>Sold Out</h2>
-                      </div>
-                    ) : (
-                      <div className='flex flex-col gap-4'>
-                        <Web3Button
-                          contractAddress={editionDrop?.getAddress() || ""}
-                          // action={(cntr) => cntr.erc1155.claim(tokenId, quantity)}
-                          action={claim}
-                          isDisabled={
-                            !canClaim ||
-                            buttonLoading ||
-                            !user?.isLoggedIn ||
-                            (balance?.toNumber() ?? 0) > 0
-                          }
-                        >
-                          {buttonLoading ? "Loading..." : buttonText}
-                        </Web3Button>
-                        {isFailed && (
-                          <div
-                            className='p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400'
-                            role='alert'
-                          >
-                            <span className='font-medium'>
-                              Minting failed. Please try again.
-                            </span>
-                          </div>
-                        )}
+                <div
+                  className={`flex flex-row align-center justify-center gap-4 mt-6 mb-6 md:mb-0`}
+                >
+                  <div className='flex flex-col gap-4'>
+                    {!!address && (
+                      <Web3Button
+                        contractAddress={editionDrop?.getAddress() || ""}
+                        action={(cntr) => cntr.erc1155.claim(tokenId, quantity)}
+                        isDisabled={
+                          !canClaim ||
+                          claimIneligibilityReasons.isLoading ||
+                          (balance?.toNumber() ?? 0) > 0
+                        }
+                        onError={() =>
+                          alert("Something went wrong. Please try again.")
+                        }
+                        onSuccess={() => confetti()}
+                      >
+                        {claimIneligibilityReasons.isLoading
+                          ? "Loading..."
+                          : buttonText}
+                      </Web3Button>
+                    )}
+                    {isFailed && (
+                      <div
+                        className='p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400'
+                        role='alert'
+                      >
+                        <span className='font-medium'>
+                          Minting failed. Please try again.
+                        </span>
                       </div>
                     )}
                   </div>
-                </>
-              )}
-            </div>
-          </>
-        )}
+                </div>
+              </>
+            )}
+          </div>
+        </>
       </div>
     </main>
   );

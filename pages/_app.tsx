@@ -57,38 +57,24 @@ export const PolygonAmoyTestnet = {
 // You can also import additional chains from `@thirdweb-dev/chains` and pass them directly.
 const activeChain = PolygonAmoyTestnet;
 
-const smartWalletConfig = {
-  factoryAddress: process.env.NEXT_PUBLIC_ACCOUNT_FACTORY_ADDRESS!,
-  gasless: true,
-};
+const smartWalletConfig = smartWallet(
+  embeddedWallet({
+    auth: {
+      options: ["email", "google", "apple"],
+    },
+  }),
+  {
+    factoryAddress: process.env.NEXT_PUBLIC_ACCOUNT_FACTORY_ADDRESS!,
+    gasless: true,
+  }
+);
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThirdwebProvider
       activeChain={activeChain}
       clientId={process.env.NEXT_PUBLIC_THRIDWEB_CLIENT_ID}
-      supportedWallets={[
-        // smartWallet(
-        //   embeddedWallet({
-        //     auth: {
-        //       options: ["email", "google", "apple"],
-        //     },
-        //   }),
-        //   smartWalletConfig
-        // ),
-        embeddedWallet({
-          auth: {
-            options: ["email", "google", "apple"],
-          },
-        }),
-        metamaskWallet(),
-        coinbaseWallet(),
-        walletConnect(),
-      ]}
-      authConfig={{
-        domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || "",
-        authUrl: "/api/auth",
-      }}
+      supportedWallets={[smartWalletConfig]}
     >
       <Navbar />
       <Component {...pageProps} />
