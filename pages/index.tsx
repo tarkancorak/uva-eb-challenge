@@ -250,7 +250,8 @@ const Home: NextPage = () => {
           </div>
           <div className='h-full w-full md:w-1/4 mb-2 md:mb-0 order-1 md:order-2'>
             {/* Title of your NFT Collection */}
-            <h1 className='ml-[5%] md:ml-0'>{contractMetadata?.name}</h1>
+            {/* <h1 className='ml-[5%] md:ml-0'>{contractMetadata?.name}</h1> */}
+            <h1 className='ml-[5%] md:ml-0'>UvA EB Challenge 2024</h1>
             {/* Description of your NFT Collection */}
             <p className={`${styles.description} ml-[5%] md:ml-0`}>
               Your Digital Keepsake
