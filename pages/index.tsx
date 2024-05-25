@@ -17,13 +17,12 @@ import {
 import { NextPage } from "next";
 import Head from "next/head";
 import ImageSlider from "../components/ImageSlider";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { parseIneligibility } from "../utils/parseIneligibility";
 import { BigNumber, utils } from "ethers";
 import styles from "../styles/Theme.module.css";
 import confetti from "canvas-confetti";
 import { images, openerImage } from "../constants/galleryImages";
-import toast from "react-hot-toast";
 
 const Home: NextPage = () => {
   const address = useAddress();
@@ -187,16 +186,12 @@ const Home: NextPage = () => {
     nft?.metadata.id
   );
 
-  const [isMinted, setIsMinted] = useState(false);
-  const [isFailed, setIsFailed] = useState(false);
-  const mintingStatus = useRef(null);
-
   const buttonText = useMemo(() => {
     if (isSoldOut) {
       return "Sold Out";
     }
 
-    if ((balance?.toNumber() ?? 0 > 0) || isMinted) {
+    if (balance?.toNumber() ?? 0 > 0) {
       return "NFT minted ✅";
     }
 
@@ -220,7 +215,6 @@ const Home: NextPage = () => {
   }, [
     isSoldOut,
     balance,
-    isMinted,
     canClaim,
     claimIneligibilityReasons.data,
     claimIneligibilityReasons.isLoading,
@@ -229,56 +223,16 @@ const Home: NextPage = () => {
     quantity,
   ]);
 
-  const getMintedStatus = async (queueId: string) => {
-    const sleep = (duration: number) =>
-      new Promise((resolve) => setTimeout(resolve, duration));
-
-    let response;
-    for (let i = 0; i < 50; i++) {
-      response = await fetch(`/api/status/?queueId=${queueId}`);
-      const json = await response.json();
-      if (mintingStatus.current !== json?.status) {
-        mintingStatus.current = json.status;
-        console.log("+++ Received status:", mintingStatus.current);
-        toast(`Minting Status: ${mintingStatus.current}`);
-      }
-      if (json.status === "mined") {
-        setIsMinted(true);
-        setIsFailed(false);
-        mintingStatus.current = null;
-        confetti();
-        break;
-      } else if (json?.status === "failed") {
-        setIsMinted(false);
-        setIsFailed(true);
-        mintingStatus.current = null;
-        break;
-      }
-
-      await sleep(1000);
-    }
-  };
-
-  const claim = async () => {
-    try {
-      const response = await fetch("/api/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokenId: contractMetadata?.id }),
-      });
-      const json = await response.json();
-      if (!response.ok || response.status !== 200) {
-        throw new Error(json);
-      }
-      const queueId = json?.queueId;
-      if (!queueId) {
-        throw new Error("Missing queueId");
-      }
-      return getMintedStatus(queueId);
-    } catch (error) {
-      setIsFailed(true);
-    }
-  };
+  if (isLoadingNft) {
+    return (
+      <main>
+        <Head>
+          <title>Your Digital Keepsake - UvA EB Challenge</title>
+        </Head>
+        <div className={styles.mintInfoContainer}>Loading...</div>
+      </main>
+    );
+  }
 
   return (
     <main>
@@ -387,16 +341,6 @@ const Home: NextPage = () => {
                           ? "Loading..."
                           : buttonText}
                       </Web3Button>
-                    )}
-                    {isFailed && (
-                      <div
-                        className='p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400'
-                        role='alert'
-                      >
-                        <span className='font-medium'>
-                          Minting failed. Please try again.
-                        </span>
-                      </div>
                     )}
                   </div>
                 </div>
