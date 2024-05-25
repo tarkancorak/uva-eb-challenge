@@ -5,7 +5,7 @@ import Image from "next/image";
 export default function Navbar() {
   return (
     <header className='px-4'>
-      <div className='flex justify-between items-center py-0 h-20 my-2 mx-auto mb-0 border-[#1c1e21] rounded-lg px-4 border-b-gray-300 bg-[#3B637C]'>
+      <div className='flex justify-between items-center py-0 h-20 my-2 mx-auto mb-0 border-[#1c1e21] rounded-lg px-4 border-b-gray-300 bg-[#0F3748]'>
         <div className='flex flex-row text-white justify-start'>
           <Image
             src='/images/logo/metamare-logo.jpg'
