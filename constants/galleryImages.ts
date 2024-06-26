@@ -8,14 +8,6 @@ export const images = [
     thumbnail: "/images/gallery/02.jpeg",
   },
   {
-    original: "/images/gallery/03.jpeg",
-    thumbnail: "/images/gallery/03.jpeg",
-  },
-  {
-    original: "/images/gallery/04.jpeg",
-    thumbnail: "/images/gallery/04.jpeg",
-  },
-  {
     original: "/images/gallery/05.jpeg",
     thumbnail: "/images/gallery/05.jpeg",
   },
